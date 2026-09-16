@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Wellness Passport</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&family=Fraunces:wght@500;600&display=swap" rel="stylesheet">
+<!-- Firebase (Realtime Database) — free tier, no backend server needed -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --bg: #f6f2ea;
+    --bg-alt: #eee7d8;
+    --surface: #ffffff;
+    --surface-2: #fbf8f1;
+    --ink: #2b2620;
+    --ink-soft: #6b6255;
+    --line: #e4dbc9;
+    --accent-eat: #e0672c;
+    --accent-move: #2f8f5b;
+    --accent-think: #6a5acd;
+    --accent-live: #d1447a;
+    --accent-eat-bg: #fdece0;
+    --accent-move-bg: #e4f4e9;
+    --accent-think-bg: #ece9fa;
+    --accent-live-bg: #fbe6ee;
+    --gold: #c99a2e;
+    --gold-bg: #faf1dc;
+    --danger: #c0392b;
+    --shadow: 0 10px 30px -12px rgba(43,38,32,0.25);
+    --shadow-sm: 0 3px 10px -4px rgba(43,38,32,0.2);
+    --radius: 20px;
+  }
+  :root:not([data-theme="light"]){
+    @media (prefers-color-scheme: dark){
+      --bg: #1b1712;
+      --bg-alt: #211c15;
+      --surface: #26211a;
+      --surface-2: #2c261d;
+      --ink: #f1ead9;
+      --ink-soft: #b6ac97;
+      --line: #3a3327;
+      --accent-eat-bg: #3a2416;
+      --accent-move-bg: #17301f;
+      --accent-think-bg: #241f3c;
+      --accent-live-bg: #391b28;
+      --gold-bg: #332a12;
+      --shadow: 0 10px 30px -12px rgba(0,0,0,0.55);
+      --shadow-sm: 0 3px 10px -4px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #1b1712;
+    --bg-alt: #211c15;
+    --surface: #26211a;
+    --surface-2: #2c261d;
+    --ink: #f1ead9;
+    --ink-soft: #b6ac97;
+    --line: #3a3327;
+    --accent-eat-bg: #3a2416;
+    --accent-move-bg: #17301f;
+    --accent-think-bg: #241f3c;
+    --accent-live-bg: #391b28;
+    --gold-bg: #332a12;
+    --shadow: 0 10px 30px -12px rgba(0,0,0,0.55);
+    --shadow-sm: 0 3px 10px -4px rgba(0,0,0,0.5);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(1200px 600px at 10% -10%, var(--bg-alt), var(--bg));
+    color: var(--ink);
+    font-family: 'Sarabun', system-ui, sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 20px 16px 64px;
+  }
+  h1,h2,h3{ font-family:'Fraunces','Sarabun',serif; font-weight:600; margin:0; }
+
+  /* header */
+  .app-header{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; margin-bottom:18px;
+  }
+  .brand{ display:flex; align-items:center; gap:12px; }
+  .brand-badge{
+    width:46px;height:46px;border-radius:14px;
+    background: linear-gradient(135deg, var(--accent-move), var(--accent-think));
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px; box-shadow: var(--shadow-sm); flex-shrink:0;
+  }
+  .brand h1{ font-size:22px; line-height:1.1; }
+  .brand span{ display:block; font-size:12.5px; color:var(--ink-soft); font-weight:500; margin-top:2px;}
+
+  .tabbar{
+    display:flex; gap:6px; background:var(--surface-2); padding:5px;
+    border-radius:14px; border:1px solid var(--line); margin-bottom:22px;
+  }
+  .tabbar button{
+    flex:1; border:none; background:transparent; padding:11px 10px;
+    border-radius:10px; font-family:inherit; font-size:15px; font-weight:600;
+    color:var(--ink-soft); cursor:pointer; transition:.15s;
+  }
+  .tabbar button.active{ background:var(--surface); color:var(--ink); box-shadow:var(--shadow-sm); }
+
+  .card{
+    background:var(--surface); border:1px solid var(--line);
+    border-radius: var(--radius); padding:22px; box-shadow:var(--shadow-sm);
+    margin-bottom:16px;
+  }
+  .muted{ color:var(--ink-soft); }
+  .small{ font-size:13px; }
+
+  label{ display:block; font-size:13.5px; font-weight:600; color:var(--ink-soft); margin:14px 0 6px; }
+  label:first-child{ margin-top:0; }
+  input[type="text"], input[type="tel"], input[type="password"]{
+    width:100%; padding:13px 14px; border-radius:12px; border:1.5px solid var(--line);
+    background:var(--surface-2); color:var(--ink); font-family:inherit; font-size:15.5px;
+    outline:none; transition:.15s;
+  }
+  input:focus{ border-color: var(--accent-think); }
+  .btn{
+    appearance:none; border:none; cursor:pointer; font-family:inherit;
+    font-weight:700; font-size:15px; border-radius:12px; padding:13px 18px;
+    transition:.15s; display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-primary{ background: linear-gradient(135deg, var(--accent-move), #1e7048); color:#fff; box-shadow: var(--shadow-sm);}
+  .btn-primary:active{ transform: scale(0.98); }
+  .btn-secondary{ background:var(--surface-2); color:var(--ink); border:1.5px solid var(--line); }
+  .btn-ghost{ background:transparent; color:var(--ink-soft); border:1.5px solid var(--line); }
+  .btn-danger{ background: var(--surface-2); color: var(--danger); border:1.5px solid var(--danger); }
+  .btn-block{ width:100%; }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn-sm{ padding:9px 13px; font-size:13.5px; border-radius:10px; }
+
+  .err{ color:var(--danger); font-size:13.5px; margin-top:8px; font-weight:600; }
+  .ok-msg{ color:var(--accent-move); font-size:13.5px; margin-top:8px; font-weight:600; }
+
+  /* passport card */
+  .passport{
+    border-radius:24px; padding:26px 22px; position:relative; overflow:hidden;
+    background: linear-gradient(160deg, var(--surface) 0%, var(--surface-2) 100%);
+    border:1px solid var(--line); box-shadow: var(--shadow);
+  }
+  .passport::before{
+    content:""; position:absolute; inset:0; opacity:.5; pointer-events:none;
+    background: radial-gradient(400px 200px at 100% 0%, var(--accent-think-bg), transparent 70%),
+                radial-gradient(400px 200px at 0% 100%, var(--accent-move-bg), transparent 70%);
+  }
+  .passport-top{ position:relative; display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .passport-name{ font-size:20px; font-weight:700; font-family:'Fraunces','Sarabun',serif;}
+  .passport-code{
+    font-family: 'Fraunces', serif; font-size:26px; font-weight:700; letter-spacing:2px;
+    background: var(--gold-bg); color:var(--gold); padding:6px 14px; border-radius:10px;
+    border:1px dashed var(--gold);
+  }
+  .passport-sub{ color:var(--ink-soft); font-size:13px; margin-top:2px;}
+
+  .stamp-grid{ position:relative; display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:20px;}
+  @media (max-width:420px){ .stamp-grid{ grid-template-columns:1fr; } }
+  .stamp-cell{
+    border-radius:16px; padding:16px; border:1.5px solid var(--line);
+    display:flex; align-items:center; gap:12px; transition:.2s;
+  }
+  .stamp-cell.filled{ border-color: transparent; box-shadow: var(--shadow-sm); }
+  .stamp-cell .icon-slot{
+    width:48px; height:48px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:24px;
+    border:2px dashed var(--line); background:var(--surface-2);
+  }
+  .stamp-cell.filled .icon-slot{ border-style:solid; }
+  .stamp-cell .st-title{ font-weight:700; font-size:14.5px; }
+  .stamp-cell .st-sub{ font-size:12px; color:var(--ink-soft); }
+  .stamp-cell.eat.filled{ background:var(--accent-eat-bg); }
+  .stamp-cell.eat .icon-slot{ border-color:var(--accent-eat); color:var(--accent-eat); }
+  .stamp-cell.move.filled{ background:var(--accent-move-bg); }
+  .stamp-cell.move .icon-slot{ border-color:var(--accent-move); color:var(--accent-move); }
+  .stamp-cell.think.filled{ background:var(--accent-think-bg); }
+  .stamp-cell.think .icon-slot{ border-color:var(--accent-think); color:var(--accent-think); }
+  .stamp-cell.live.filled{ background:var(--accent-live-bg); }
+  .stamp-cell.live .icon-slot{ border-color:var(--accent-live); color:var(--accent-live); }
+
+  .progress-row{ position:relative; margin-top:18px; display:flex; align-items:center; gap:10px;}
+  .progress-track{ flex:1; height:10px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden;}
+  .progress-fill{ height:100%; border-radius:999px; background:linear-gradient(90deg, var(--accent-eat), var(--accent-move), var(--accent-think), var(--accent-live)); transition:width .4s; }
+  .progress-txt{ font-weight:700; font-size:13.5px; white-space:nowrap; }
+  .complete-banner{
+    position:relative; margin-top:16px; padding:12px 14px; border-radius:14px;
+    background: var(--gold-bg); color:var(--gold); font-weight:700; font-size:13.5px;
+    display:flex; align-items:center; gap:8px; border:1px solid var(--gold);
+  }
+
+  /* admin */
+  .pin-wrap{ max-width:320px; margin:30px auto; text-align:center; }
+  .pin-wrap .icon{ font-size:40px; }
+
+  .station-picker{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:8px;}
+  @media (max-width:420px){ .station-picker{ grid-template-columns:1fr 1fr; } }
+  .station-chip{
+    border-radius:14px; padding:12px 10px; border:1.5px solid var(--line); cursor:pointer;
+    background:var(--surface-2); text-align:center; font-weight:700; font-size:13.5px; transition:.15s;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .station-chip .ic{ font-size:20px; }
+  .station-chip.sel.eat{ background:var(--accent-eat-bg); border-color:var(--accent-eat); color:var(--accent-eat); }
+  .station-chip.sel.move{ background:var(--accent-move-bg); border-color:var(--accent-move); color:var(--accent-move); }
+  .station-chip.sel.think{ background:var(--accent-think-bg); border-color:var(--accent-think); color:var(--accent-think); }
+  .station-chip.sel.live{ background:var(--accent-live-bg); border-color:var(--accent-live); color:var(--accent-live); }
+
+  .search-results{ margin-top:10px; display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto; }
+  .result-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:11px 13px; border-radius:12px; border:1.5px solid var(--line); background:var(--surface-2);
+    cursor:pointer; transition:.15s;
+  }
+  .result-row:hover{ border-color: var(--accent-think); }
+  .result-row .rname{ font-weight:700; font-size:14.5px; }
+  .result-row .rmeta{ font-size:12px; color:var(--ink-soft); }
+  .result-row .rstamps{ font-size:13px; font-weight:700; color:var(--accent-move); white-space:nowrap; }
+
+  .selected-panel{ margin-top:16px; padding:16px; border-radius:16px; background:var(--surface-2); border:1px solid var(--line); }
+  .sp-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;}
+  .sp-head .spn{ font-weight:700; font-size:16px; }
+  .sp-head .spc{ font-family:'Fraunces',serif; font-weight:700; color:var(--gold); }
+  .toggle-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  @media (max-width:480px){ .toggle-grid{ grid-template-columns:repeat(2,1fr);} }
+  .toggle-btn{
+    border-radius:12px; padding:12px 6px; border:1.5px solid var(--line); background:var(--surface);
+    cursor:pointer; text-align:center; font-size:12.5px; font-weight:700; transition:.15s;
+  }
+  .toggle-btn .ic{ font-size:20px; display:block; margin-bottom:4px;}
+  .toggle-btn.on.eat{ background:var(--accent-eat-bg); border-color:var(--accent-eat); color:var(--accent-eat); }
+  .toggle-btn.on.move{ background:var(--accent-move-bg); border-color:var(--accent-move); color:var(--accent-move); }
+  .toggle-btn.on.think{ background:var(--accent-think-bg); border-color:var(--accent-think); color:var(--accent-think); }
+  .toggle-btn.on.live{ background:var(--accent-live-bg); border-color:var(--accent-live); color:var(--accent-live); }
+
+  .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:6px;}
+  @media (max-width:520px){ .stat-grid{ grid-template-columns:repeat(2,1fr);} }
+  .stat-box{ background:var(--surface-2); border:1px solid var(--line); border-radius:14px; padding:14px 10px; text-align:center;}
+  .stat-box .num{ font-family:'Fraunces',serif; font-size:24px; font-weight:700;}
+  .stat-box .lbl{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; font-weight:600;}
+
+  table{ width:100%; border-collapse:collapse; margin-top:12px; font-size:13.5px; }
+  thead th{ text-align:left; padding:9px 8px; color:var(--ink-soft); font-size:12px; border-bottom:1.5px solid var(--line); position:sticky; top:0; background:var(--surface); }
+  tbody td{ padding:9px 8px; border-bottom:1px solid var(--line); }
+  tbody tr:hover{ background:var(--surface-2); }
+  .table-wrap{ max-height:360px; overflow:auto; border-radius:12px; border:1px solid var(--line); margin-top:6px;}
+  .pill{ display:inline-flex; align-items:center; gap:3px; font-size:11.5px; font-weight:700; padding:3px 8px; border-radius:999px; }
+  .pill.full{ background:var(--gold-bg); color:var(--gold); }
+  .pill.part{ background:var(--surface-2); color:var(--ink-soft); border:1px solid var(--line);}
+
+  .toolbar{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .toolbar .btn{ flex:1; min-width:140px; }
+
+  .divider{ height:1px; background:var(--line); margin:18px 0; }
+  .row-between{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .empty-state{ text-align:center; padding:26px 10px; color:var(--ink-soft); }
+  .empty-state .ic{ font-size:34px; margin-bottom:8px; }
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%);
+    background:var(--ink); color:var(--bg); padding:12px 20px; border-radius:999px;
+    font-weight:700; font-size:13.5px; box-shadow:var(--shadow); z-index:50; opacity:0;
+    pointer-events:none; transition:.25s;
+  }
+  .toast.show{ opacity:1; bottom:32px; }
+  .footer-note{ text-align:center; color:var(--ink-soft); font-size:12px; margin-top:26px; line-height:1.7;}
+  input[type="file"]{ display:none; }
+
+  .conn-badge{
+    display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700;
+    padding:5px 10px; border-radius:999px; border:1px solid var(--line); background:var(--surface-2);
+    color:var(--ink-soft); white-space:nowrap;
+  }
+  .conn-dot{ width:8px; height:8px; border-radius:50%; background:#999; flex-shrink:0; }
+  .conn-badge.online .conn-dot{ background:var(--accent-move); box-shadow:0 0 0 3px var(--accent-move-bg); }
+  .conn-badge.offline .conn-dot{ background:var(--danger); box-shadow:0 0 0 3px var(--accent-live-bg); }
+  .conn-badge.online{ color:var(--accent-move); }
+  .conn-badge.offline{ color:var(--danger); }
+
+  .setup-banner{
+    background:var(--accent-live-bg); border:1.5px solid var(--accent-live); color:var(--ink);
+    border-radius:16px; padding:16px 18px; margin-bottom:16px; font-size:13.5px; line-height:1.7;
+  }
+  .setup-banner b{ color:var(--accent-live); }
+  .setup-banner code{ background:var(--surface); padding:1px 6px; border-radius:6px; font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="app-header">
+    <div class="brand">
+      <div class="brand-badge">🌿</div>
+      <div>
+        <h1>Wellness Passport</h1>
+        <span>4 Station Stamp Rally · Lucky Draw</span>
+      </div>
+    </div>
+    <div class="conn-badge offline" id="connBadge"><span class="conn-dot"></span><span id="connLabel">Connecting...</span></div>
+  </div>
+
+  <div id="setupBanner" class="setup-banner" style="display:none;">
+    ⚠️ <b>Firebase is not configured yet.</b> Open <code>index.html</code>, find the <code>firebaseConfig</code>
+    object near the top of the <code>&lt;script&gt;</code> block, and paste in your own Firebase project's config
+    (from Firebase Console → Project settings → General → Your apps). See the README for step-by-step setup.
+  </div>
+
+  <div class="tabbar">
+    <button id="tabPlayerBtn" class="active">🎫 Player</button>
+    <button id="tabAdminBtn">🛠️ Admin</button>
+  </div>
+
+  <!-- PLAYER VIEW -->
+  <div id="viewPlayer">
+
+    <div id="registerCard" class="card" style="display:none;">
+      <h2 style="font-size:19px;">Register for Your Passport</h2>
+      <p class="muted small" style="margin-top:6px;">Fill in your details to get a unique Passport ID for collecting stamps at all 4 stations.</p>
+      <label>Full Name</label>
+      <input type="text" id="regName" placeholder="e.g. Jane Smith" autocomplete="off">
+      <label>Phone Number</label>
+      <input type="tel" id="regPhone" placeholder="e.g. 0812345678" autocomplete="off" inputmode="numeric">
+      <div id="regErr" class="err" style="display:none;"></div>
+      <button class="btn btn-primary btn-block" id="regBtn" style="margin-top:16px;">✨ Get My Passport</button>
+
+      <div class="divider"></div>
+      <p class="muted small" style="margin-bottom:8px;">Already have a Passport? Look it up by phone number</p>
+      <div style="display:flex; gap:8px;">
+        <input type="tel" id="lookupPhone" placeholder="Enter phone number" style="flex:1;" inputmode="numeric">
+        <button class="btn btn-secondary" id="lookupBtn">Search</button>
+      </div>
+      <div id="lookupErr" class="err" style="display:none;"></div>
+    </div>
+
+    <div id="passportCard" style="display:none;"></div>
+
+    <div id="playerActions" style="display:none; margin-top:12px; text-align:center;">
+      <button class="btn btn-ghost btn-sm" id="switchAccBtn">🔁 Use a different number / check another Passport</button>
+    </div>
+  </div>
+
+  <!-- ADMIN VIEW -->
+  <div id="viewAdmin" style="display:none;">
+
+    <div id="pinScreen" class="card pin-wrap">
+      <div class="icon">🔐</div>
+      <h2 style="font-size:19px; margin-top:10px;">Admin Zone</h2>
+      <p class="muted small" style="margin:8px 0 14px;">Enter the PIN to stamp passports and view participant reports.</p>
+      <input type="password" id="pinInput" placeholder="PIN" inputmode="numeric" style="text-align:center; letter-spacing:4px; font-size:18px;">
+      <div id="pinErr" class="err" style="display:none;"></div>
+      <button class="btn btn-primary btn-block" id="pinBtn" style="margin-top:12px;">Unlock</button>
+      <p class="muted small" style="margin-top:14px;">Default PIN: 2026 (editable in the code)</p>
+    </div>
+
+    <div id="adminPanel" style="display:none;">
+
+      <div class="card">
+        <div class="row-between">
+          <h2 style="font-size:18px;">⚡ Quick Stamp Mode</h2>
+          <button class="btn btn-ghost btn-sm" id="lockBtn">🔒 Lock</button>
+        </div>
+        <p class="muted small" style="margin-top:4px;">Pick the station you're running, then search for a player to stamp instantly.</p>
+        <div class="station-picker" id="stationPicker"></div>
+
+        <label>Search Player (name / phone / Passport ID)</label>
+        <input type="text" id="adminSearch" placeholder="Type to search..." autocomplete="off">
+        <div class="search-results" id="searchResults"></div>
+
+        <div id="selectedPanel" class="selected-panel" style="display:none;"></div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:18px;">➕ Register New Player (Walk-in)</h2>
+        <label>Full Name</label>
+        <input type="text" id="aRegName" placeholder="Player name">
+        <label>Phone Number</label>
+        <input type="tel" id="aRegPhone" placeholder="Phone number" inputmode="numeric">
+        <div id="aRegErr" class="err" style="display:none;"></div>
+        <button class="btn btn-primary btn-block" id="aRegBtn" style="margin-top:14px;">Register</button>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:18px;">📊 Summary</h2>
+        <div class="stat-grid" id="statGrid"></div>
+
+        <div class="row-between" style="margin-top:18px;">
+          <h3 style="font-size:15px;">All Participants</h3>
+        </div>
+        <input type="text" id="tableSearch" placeholder="Search table..." style="margin-top:8px;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Name</th><th>Phone</th><th>Stations</th><th>Total</th></tr>
+            </thead>
+            <tbody id="participantTable"></tbody>
+          </table>
+        </div>
+
+        <div class="toolbar">
+          <button class="btn btn-primary" id="exportCsvBtn">⬇️ Export CSV (Lucky Draw)</button>
+          <button class="btn btn-secondary" id="exportJsonBtn">💾 Export Backup (JSON)</button>
+          <button class="btn btn-secondary" id="importJsonBtn">📤 Import / Merge Data</button>
+          <input type="file" id="importFile" accept="application/json">
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:16px; color:var(--danger);">⚠️ Danger Zone</h2>
+        <p class="muted small" style="margin:6px 0 12px;">Clear all participant data on this device (only use at the end of the event or for testing).</p>
+        <button class="btn btn-danger btn-block" id="resetAllBtn">Clear All Data</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer-note">
+    Data is stored on this device (Local Storage) &middot; We recommend admins use a single device throughout the event<br>
+    for accuracy, or Export/Import JSON to merge data from multiple devices.
+  </p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STATIONS = [
+    { key:"eat",   name:"Eat Well",  th:"Healthy Food", icon:"🥗", cls:"eat"   },
+    { key:"move",  name:"Move Well", th:"Fun Fitness",      icon:"🤸", cls:"move"  },
+    { key:"think", name:"Think Well",th:"Mental Wellness",         icon:"🧘", cls:"think" },
+    { key:"live",  name:"Live Well", th:"Relax & Massage",   icon:"💆", cls:"live"  }
+  ];
+  var ADMIN_PIN = "2026";
+  var LS_MYID = "wp_myid_v1";
+  var LS_UNLOCK = "wp_admin_unlocked_v1";
+
+  // ---------- Firebase config ----------
+  // 1. Go to https://console.firebase.google.com -> Create a project (free)
+  // 2. Build -> Realtime Database -> Create Database -> start in test mode (or use the
+  //    security rules from the README once you're ready to lock it down).
+  // 3. Project settings -> General -> Your apps -> Add app (</> web icon) -> copy the config below.
+  const firebaseConfig = {
+  apiKey: "AIzaSyDt7C9B_9q_s7ga0lx_BVeWDC-Y5iey27U",
+  authDomain: "shr-wellness.firebaseapp.com",
+  databaseURL: "https://shr-wellness-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "shr-wellness",
+  storageBucket: "shr-wellness.firebasestorage.app",
+  messagingSenderId: "363068764119",
+  appId: "1:363068764119:web:79ccc6c1cbd9a7c7e62592",
+  measurementId: "G-068V5WVVNL"
+};
+
+  var firebaseReady = firebaseConfig.apiKey !== "YOUR_API_KEY";
+  var db = null, participantsRef = null, counterRef = null;
+
+  if(firebaseReady){
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    participantsRef = db.ref("participants");
+    counterRef = db.ref("meta/nextNum");
+  } else {
+    document.getElementById("setupBanner").style.display = "";
+    document.getElementById("connLabel").textContent = "Not configured";
+  }
+
+  // in-memory mirror of the live Firebase data, kept in sync by onDataChange()
+  var data = {};
+
+  function normPhone(p){ return (p||"").replace(/[^0-9]/g,""); }
+
+  function makeCode(num){ return "WP" + String(num).padStart(3,"0"); }
+
+  // Atomically claims the next passport number and writes the new participant.
+  // Uses a Firebase transaction so two devices registering at the same instant
+  // never collide on the same passport code.
+  function createParticipant(name, phone, cb){
+    if(!firebaseReady){ cb(new Error("Firebase is not configured yet — see the setup banner above.")); return; }
+    counterRef.transaction(function(cur){ return (cur || 0) + 1; }, function(err, committed, snap){
+      if(err){ cb(err); return; }
+      if(!committed){ cb(new Error("Could not reserve a passport number, please try again.")); return; }
+      var num = snap.val();
+      var code = makeCode(num);
+      var p = {
+        id: code,
+        num: num,
+        name: name.trim(),
+        phone: normPhone(phone),
+        stamps: { eat:false, move:false, think:false, live:false },
+        stampedAt: { eat:null, move:null, think:null, live:null },
+        createdAt: new Date().toISOString()
+      };
+      participantsRef.child(code).set(p).then(function(){ cb(null, p); }).catch(cb);
+    });
+  }
+
+  function setStamp(id, key, value){
+    if(!firebaseReady) return;
+    var updates = {};
+    updates["participants/" + id + "/stamps/" + key] = value;
+    updates["participants/" + id + "/stampedAt/" + key] = value ? new Date().toISOString() : null;
+    db.ref().update(updates);
+  }
+
+  function findByPhone(phone){
+    phone = normPhone(phone);
+    if(!phone) return null;
+    for(var id in data){
+      if(data[id].phone === phone) return data[id];
+    }
+    return null;
+  }
+
+  function stampCount(p){
+    var c = 0;
+    STATIONS.forEach(function(s){ if(p.stamps[s.key]) c++; });
+    return c;
+  }
+
+  function toast(msg){
+    var t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toast._h);
+    toast._h = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  // ---------- tabs ----------
+  var tabPlayerBtn = document.getElementById("tabPlayerBtn");
+  var tabAdminBtn = document.getElementById("tabAdminBtn");
+  var viewPlayer = document.getElementById("viewPlayer");
+  var viewAdmin = document.getElementById("viewAdmin");
+
+  tabPlayerBtn.addEventListener("click", function(){
+    tabPlayerBtn.classList.add("active"); tabAdminBtn.classList.remove("active");
+    viewPlayer.style.display=""; viewAdmin.style.display="none";
+  });
+  tabAdminBtn.addEventListener("click", function(){
+    tabAdminBtn.classList.add("active"); tabPlayerBtn.classList.remove("active");
+    viewAdmin.style.display=""; viewPlayer.style.display="none";
+    renderAdmin();
+  });
+
+  // ================= PLAYER VIEW =================
+  var registerCard = document.getElementById("registerCard");
+  var passportCard = document.getElementById("passportCard");
+  var playerActions = document.getElementById("playerActions");
+
+  function renderPlayer(){
+    var myid = localStorage.getItem(LS_MYID);
+    var p = myid ? data[myid] : null;
+    if(p){
+      registerCard.style.display = "none";
+      playerActions.style.display = "";
+      passportCard.style.display = "";
+      passportCard.innerHTML = renderPassportHTML(p);
+    } else {
+      registerCard.style.display = "";
+      playerActions.style.display = "none";
+      passportCard.style.display = "none";
+    }
+  }
+
+  function renderPassportHTML(p){
+    var count = stampCount(p);
+    var pct = Math.round(count/4*100);
+    var cells = STATIONS.map(function(s){
+      var filled = p.stamps[s.key];
+      return '<div class="stamp-cell '+s.cls+(filled?' filled':'')+'">' +
+        '<div class="icon-slot">'+(filled ? s.icon : "☆")+'</div>' +
+        '<div><div class="st-title">'+s.th+'</div><div class="st-sub">'+s.name+'</div></div>' +
+        '</div>';
+    }).join("");
+
+    var banner = count===4 ? '<div class="complete-banner">🏆 All 4 stamps complete! You are entered in the Lucky Draw</div>' : '';
+
+    return '<div class="passport">' +
+      '<div class="passport-top">' +
+        '<div><div class="passport-name">'+escapeHtml(p.name)+'</div><div class="passport-sub">Your Wellness Passport</div></div>' +
+        '<div class="passport-code">'+p.id+'</div>' +
+      '</div>' +
+      '<div class="stamp-grid">'+cells+'</div>' +
+      '<div class="progress-row">' +
+        '<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>' +
+        '<div class="progress-txt">'+count+' / 4</div>' +
+      '</div>' +
+      banner +
+    '</div>';
+  }
+
+  function escapeHtml(s){
+    return (s||"").replace(/[&<>"']/g, function(c){
+      return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];
+    });
+  }
+
+  document.getElementById("regBtn").addEventListener("click", function(){
+    var name = document.getElementById("regName").value.trim();
+    var phone = normPhone(document.getElementById("regPhone").value);
+    var errEl = document.getElementById("regErr");
+    var btn = document.getElementById("regBtn");
+    errEl.style.display = "none";
+    if(!name){ errEl.textContent = "Please enter your full name"; errEl.style.display=""; return; }
+    if(phone.length < 9){ errEl.textContent = "Please enter a valid phone number"; errEl.style.display=""; return; }
+    var existing = findByPhone(phone);
+    if(existing){
+      localStorage.setItem(LS_MYID, existing.id);
+      toast("Found your existing Passport 🎉");
+      renderPlayer();
+      return;
+    }
+    btn.disabled = true; btn.textContent = "Creating...";
+    createParticipant(name, phone, function(err, p){
+      btn.disabled = false; btn.textContent = "✨ Get My Passport";
+      if(err){ errEl.textContent = err.message || "Something went wrong, please try again."; errEl.style.display=""; return; }
+      localStorage.setItem(LS_MYID, p.id);
+      toast("Passport created successfully! 🎫");
+      renderPlayer();
+    });
+  });
+
+  document.getElementById("lookupBtn").addEventListener("click", function(){
+    var phone = normPhone(document.getElementById("lookupPhone").value);
+    var errEl = document.getElementById("lookupErr");
+    errEl.style.display = "none";
+    var p = findByPhone(phone);
+    if(!p){ errEl.textContent = "No Passport found for this number. Please register above."; errEl.style.display=""; return; }
+    localStorage.setItem(LS_MYID, p.id);
+    toast("Found your Passport!");
+    renderPlayer();
+  });
+
+  document.getElementById("switchAccBtn").addEventListener("click", function(){
+    localStorage.removeItem(LS_MYID);
+    renderPlayer();
+  });
+
+  // ================= ADMIN VIEW =================
+  var pinScreen = document.getElementById("pinScreen");
+  var adminPanel = document.getElementById("adminPanel");
+  var currentStation = STATIONS[0].key;
+  var selectedId = null;
+
+  function isUnlocked(){ return sessionStorage.getItem(LS_UNLOCK) === "1"; }
+
+  function renderAdmin(){
+    if(isUnlocked()){
+      pinScreen.style.display = "none";
+      adminPanel.style.display = "";
+      renderStationPicker();
+      renderSearchResults("");
+      renderStats();
+      renderTable("");
+    } else {
+      pinScreen.style.display = "";
+      adminPanel.style.display = "none";
+    }
+  }
+
+  document.getElementById("pinBtn").addEventListener("click", tryUnlock);
+  document.getElementById("pinInput").addEventListener("keydown", function(e){ if(e.key==="Enter") tryUnlock(); });
+  function tryUnlock(){
+    var val = document.getElementById("pinInput").value;
+    var errEl = document.getElementById("pinErr");
+    if(val === ADMIN_PIN){
+      sessionStorage.setItem(LS_UNLOCK, "1");
+      document.getElementById("pinInput").value = "";
+      errEl.style.display = "none";
+      renderAdmin();
+    } else {
+      errEl.textContent = "Incorrect PIN";
+      errEl.style.display = "";
+    }
+  }
+  document.getElementById("lockBtn").addEventListener("click", function(){
+    sessionStorage.removeItem(LS_UNLOCK);
+    renderAdmin();
+  });
+
+  function renderStationPicker(){
+    var el = document.getElementById("stationPicker");
+    el.innerHTML = STATIONS.map(function(s){
+      var sel = s.key === currentStation ? " sel "+s.cls : "";
+      return '<div class="station-chip'+sel+'" data-key="'+s.key+'">' +
+        '<div class="ic">'+s.icon+'</div>' + s.th + '</div>';
+    }).join("");
+    Array.prototype.forEach.call(el.querySelectorAll(".station-chip"), function(chip){
+      chip.addEventListener("click", function(){
+        currentStation = chip.getAttribute("data-key");
+        renderStationPicker();
+      });
+    });
+  }
+
+  var adminSearch = document.getElementById("adminSearch");
+  adminSearch.addEventListener("input", function(){ renderSearchResults(adminSearch.value); });
+
+  function renderSearchResults(q){
+    var el = document.getElementById("searchResults");
+    q = (q||"").trim().toLowerCase();
+    var list = Object.keys(data).map(function(k){ return data[k]; })
+      .sort(function(a,b){ return b.num - a.num; });
+    if(q){
+      list = list.filter(function(p){
+        return p.name.toLowerCase().indexOf(q) > -1 ||
+               p.phone.indexOf(q) > -1 ||
+               p.id.toLowerCase().indexOf(q) > -1;
+      });
+    }
+    list = list.slice(0, 25);
+    if(list.length === 0){
+      el.innerHTML = '<div class="empty-state small">No players found. Try searching by name, phone, or Passport ID</div>';
+      return;
+    }
+    el.innerHTML = list.map(function(p){
+      return '<div class="result-row" data-id="'+p.id+'">' +
+        '<div><div class="rname">'+escapeHtml(p.name)+'</div><div class="rmeta">'+p.id+' &middot; '+p.phone+'</div></div>' +
+        '<div class="rstamps">'+stampCount(p)+'/4</div>' +
+      '</div>';
+    }).join("");
+    Array.prototype.forEach.call(el.querySelectorAll(".result-row"), function(row){
+      row.addEventListener("click", function(){
+        selectedId = row.getAttribute("data-id");
+        renderSelectedPanel();
+      });
+    });
+  }
+
+  function renderSelectedPanel(){
+    var el = document.getElementById("selectedPanel");
+    var p = data[selectedId];
+    if(!p){ el.style.display="none"; return; }
+    el.style.display = "";
+    var toggles = STATIONS.map(function(s){
+      var on = p.stamps[s.key];
+      return '<div class="toggle-btn '+(on?'on '+s.cls:'')+'" data-key="'+s.key+'">' +
+        '<span class="ic">'+s.icon+'</span>'+s.th+'</div>';
+    }).join("");
+    el.innerHTML =
+      '<div class="sp-head"><div class="spn">'+escapeHtml(p.name)+' <span class="muted small">('+p.phone+')</span></div><div class="spc">'+p.id+'</div></div>' +
+      '<div class="toggle-grid">'+toggles+'</div>' +
+      '<button class="btn btn-primary btn-block" id="quickStampBtn" style="margin-top:12px;">⭐ Stamp '+STATIONS.find(function(s){return s.key===currentStation;}).th+'</button>';
+
+    Array.prototype.forEach.call(el.querySelectorAll(".toggle-btn"), function(btn){
+      btn.addEventListener("click", function(){
+        var key = btn.getAttribute("data-key");
+        setStamp(p.id, key, !p.stamps[key]);
+        // UI refreshes automatically via the live Firebase listener (onDataChange)
+      });
+    });
+    document.getElementById("quickStampBtn").addEventListener("click", function(){
+      if(p.stamps[currentStation]){
+        toast(p.name + " already has the " + STATIONS.find(function(s){return s.key===currentStation;}).th + " stamp");
+        return;
+      }
+      setStamp(p.id, currentStation, true);
+      toast("✅ Stamped " + p.name + " successfully!");
+      // UI refreshes automatically via the live Firebase listener (onDataChange)
+    });
+  }
+
+  document.getElementById("aRegBtn").addEventListener("click", function(){
+    var name = document.getElementById("aRegName").value.trim();
+    var phone = normPhone(document.getElementById("aRegPhone").value);
+    var errEl = document.getElementById("aRegErr");
+    var btn = document.getElementById("aRegBtn");
+    errEl.style.display = "none";
+    if(!name){ errEl.textContent = "Please enter a name"; errEl.style.display=""; return; }
+    if(phone.length < 9){ errEl.textContent = "Please enter a valid phone number"; errEl.style.display=""; return; }
+    if(findByPhone(phone)){ errEl.textContent = "This phone number is already registered"; errEl.style.display=""; return; }
+    btn.disabled = true; btn.textContent = "Registering...";
+    createParticipant(name, phone, function(err, p){
+      btn.disabled = false; btn.textContent = "Register";
+      if(err){ errEl.textContent = err.message || "Something went wrong, please try again."; errEl.style.display=""; return; }
+      document.getElementById("aRegName").value = "";
+      document.getElementById("aRegPhone").value = "";
+      toast("Registered "+p.name+" successfully ("+p.id+")");
+      selectedId = p.id;
+      // table/stats/search refresh automatically via the live listener
+    });
+  });
+
+  function renderStats(){
+    var list = Object.keys(data).map(function(k){return data[k];});
+    var total = list.length;
+    var full = list.filter(function(p){ return stampCount(p)===4; }).length;
+    var stationCounts = {};
+    STATIONS.forEach(function(s){ stationCounts[s.key] = list.filter(function(p){return p.stamps[s.key];}).length; });
+    var totalStamps = STATIONS.reduce(function(sum,s){ return sum + stationCounts[s.key]; }, 0);
+
+    var boxes = [
+      { num: total, lbl: "Total Participants" },
+      { num: full, lbl: "Complete (4/4) 🏆" },
+      { num: totalStamps, lbl: "Total Stamps Given" },
+      { num: total ? Math.round(totalStamps/total*10)/10 : 0, lbl: "Avg / Person" }
+    ];
+    document.getElementById("statGrid").innerHTML = boxes.map(function(b){
+      return '<div class="stat-box"><div class="num">'+b.num+'</div><div class="lbl">'+b.lbl+'</div></div>';
+    }).join("");
+  }
+
+  var tableSearch = document.getElementById("tableSearch");
+  tableSearch.addEventListener("input", function(){ renderTable(tableSearch.value); });
+
+  function renderTable(q){
+    var el = document.getElementById("participantTable");
+    q = (q||"").trim().toLowerCase();
+    var list = Object.keys(data).map(function(k){return data[k];})
+      .sort(function(a,b){ return stampCount(b)-stampCount(a) || a.num-b.num; });
+    if(q){
+      list = list.filter(function(p){
+        return p.name.toLowerCase().indexOf(q)>-1 || p.phone.indexOf(q)>-1 || p.id.toLowerCase().indexOf(q)>-1;
+      });
+    }
+    if(list.length===0){
+      el.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="ic">🗒️</div>No participants yet</div></td></tr>';
+      return;
+    }
+    el.innerHTML = list.map(function(p){
+      var count = stampCount(p);
+      var icons = STATIONS.map(function(s){ return p.stamps[s.key] ? s.icon : '<span class="muted">'+"○"+'</span>'; }).join(" ");
+      var pill = count===4 ? '<span class="pill full">🏆 Complete</span>' : '<span class="pill part">'+count+'/4</span>';
+      return '<tr><td>'+p.id+'</td><td>'+escapeHtml(p.name)+'</td><td>'+p.phone+'</td><td>'+icons+'</td><td>'+pill+'</td></tr>';
+    }).join("");
+  }
+
+  // ---------- CSV / JSON export & import ----------
+  var downloadsCap = null;
+  function getDownloads(){
+    if(window.claude && window.claude.use){
+      return claude.use("downloads").then(function(d){ downloadsCap = d; return d; });
+    }
+    return Promise.resolve(null);
+  }
+
+  function buildCsv(){
+    var header = ["Passport ID","Name","Phone","Eat Well","Move Well","Think Well","Live Well","Total Stamps","Registered At"];
+    var rows = Object.keys(data).map(function(k){ return data[k]; })
+      .sort(function(a,b){ return a.num-b.num; })
+      .map(function(p){
+        return [
+          p.id, p.name, p.phone,
+          p.stamps.eat?"1":"0", p.stamps.move?"1":"0", p.stamps.think?"1":"0", p.stamps.live?"1":"0",
+          String(stampCount(p)), p.createdAt
+        ];
+      });
+    var lines = [header].concat(rows).map(function(r){
+      return r.map(function(cell){
+        cell = String(cell==null?"":cell);
+        if(/[",\n]/.test(cell)) cell = '"' + cell.replace(/"/g,'""') + '"';
+        return cell;
+      }).join(",");
+    });
+    return "\uFEFF" + lines.join("\r\n");
+  }
+
+  document.getElementById("exportCsvBtn").addEventListener("click", function(){
+    var csv = buildCsv();
+    saveFile("wellness-passport-" + dateStamp() + ".csv", csv, "text/csv");
+  });
+  document.getElementById("exportJsonBtn").addEventListener("click", function(){
+    var json = JSON.stringify({ exportedAt: new Date().toISOString(), participants: data }, null, 2);
+    saveFile("wellness-passport-backup-" + dateStamp() + ".json", json, "application/json");
+  });
+
+  function dateStamp(){
+    var d = new Date();
+    function pad(n){ return String(n).padStart(2,"0"); }
+    return d.getFullYear()+""+pad(d.getMonth()+1)+pad(d.getDate())+"-"+pad(d.getHours())+pad(d.getMinutes());
+  }
+
+  function saveFile(filename, content, mime){
+    getDownloads().then(function(d){
+      if(d && d.save){
+        d.save({ filename: filename, data: content }).then(function(){
+          toast("Saved file " + filename);
+        }).catch(function(err){
+          toast("Could not save file: " + (err && err.code ? err.code : "unknown"));
+        });
+      } else {
+        // fallback for non-published / local preview contexts
+        try{
+          var blob = new Blob([content], {type: mime});
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url; a.download = filename;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast("Saved file " + filename);
+        }catch(e){
+          toast("Unable to save file on this device");
+        }
+      }
+    });
+  }
+
+  document.getElementById("importJsonBtn").addEventListener("click", function(){
+    document.getElementById("importFile").click();
+  });
+  document.getElementById("importFile").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    if(!firebaseReady){ toast("Firebase is not configured yet."); e.target.value=""; return; }
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var parsed = JSON.parse(reader.result);
+        var incoming = parsed.participants || parsed;
+        var updates = {};
+        var added = 0, updated = 0, maxNum = 0;
+        Object.keys(incoming).forEach(function(id){
+          var p = incoming[id];
+          if(!p || !p.id) return;
+          var existing = data[id];
+          if(existing){
+            STATIONS.forEach(function(s){
+              if(p.stamps && p.stamps[s.key] && !existing.stamps[s.key]){
+                updates["participants/"+id+"/stamps/"+s.key] = true;
+                updates["participants/"+id+"/stampedAt/"+s.key] = (p.stampedAt && p.stampedAt[s.key]) || new Date().toISOString();
+              }
+            });
+            updated++;
+          } else {
+            updates["participants/"+id] = p;
+            added++;
+          }
+          var num = parseInt(String(p.id).replace(/[^0-9]/g,""),10);
+          if(!isNaN(num) && num > maxNum) maxNum = num;
+        });
+        db.ref().update(updates).then(function(){
+          return counterRef.transaction(function(cur){ return Math.max(cur||0, maxNum); });
+        }).then(function(){
+          toast("Merge successful: "+added+" added, "+updated+" updated");
+        }).catch(function(){
+          toast("Some data could not be merged.");
+        });
+      }catch(err){
+        toast("Invalid file. Import failed.");
+      }
+      e.target.value = "";
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById("resetAllBtn").addEventListener("click", function(){
+    if(!firebaseReady){ toast("Firebase is not configured yet."); return; }
+    if(!confirm("Confirm clearing all participant data? This action cannot be undone.")) return;
+    if(!confirm("Confirm again: all data will be permanently deleted.")) return;
+    Promise.all([ participantsRef.remove(), counterRef.remove() ]).then(function(){
+      localStorage.removeItem(LS_MYID);
+      toast("All data cleared");
+      renderPlayer();
+      document.getElementById("selectedPanel").style.display = "none";
+    }).catch(function(){
+      toast("Could not clear data — check your connection.");
+    });
+  });
+
+  // ---------- live sync ----------
+  // Single source of truth: every write anywhere (this device or another) flows
+  // back through this listener, which refreshes the whole UI. This is what makes
+  // stamps sync in real time across every admin device and every player's phone.
+  function onDataChange(snapshot){
+    data = snapshot.val() || {};
+    renderPlayer();
+    if(isUnlocked() && adminPanel.style.display !== "none"){
+      renderSearchResults(adminSearch.value);
+      renderSelectedPanel();
+      renderStats();
+      renderTable(document.getElementById("tableSearch").value);
+    }
+  }
+
+  if(firebaseReady){
+    participantsRef.on("value", onDataChange, function(err){
+      toast("Sync error: " + (err && err.message ? err.message : "check your connection"));
+    });
+
+    var connBadge = document.getElementById("connBadge");
+    var connLabel = document.getElementById("connLabel");
+    db.ref(".info/connected").on("value", function(snap){
+      if(snap.val() === true){
+        connBadge.className = "conn-badge online";
+        connLabel.textContent = "Live";
+      } else {
+        connBadge.className = "conn-badge offline";
+        connLabel.textContent = "Connecting...";
+      }
+    });
+  }
+
+  // ---------- init ----------
+  renderPlayer();
+})();
+</script>
+</body>
+</html>
