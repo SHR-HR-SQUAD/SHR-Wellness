@@ -325,16 +325,16 @@
       <h2 style="font-size:19px;">Register for Your Passport</h2>
       <p class="muted small" style="margin-top:6px;">Fill in your details to get a unique Passport ID for collecting stamps at all 4 stations.</p>
       <label>Full Name</label>
-      <input type="text" id="regName" placeholder="e.g. Jane Smith" autocomplete="off">
-      <label>Phone Number</label>
+      <input type="text" id="regName" placeholder="e.g. Any names... Smith" autocomplete="off">
+      <label>Emp ID</label>
       <input type="tel" id="regPhone" placeholder="e.g. 0812345678" autocomplete="off" inputmode="numeric">
       <div id="regErr" class="err" style="display:none;"></div>
       <button class="btn btn-primary btn-block" id="regBtn" style="margin-top:16px;">✨ Get My Passport</button>
 
       <div class="divider"></div>
-      <p class="muted small" style="margin-bottom:8px;">Already have a Passport? Look it up by phone number</p>
+      <p class="muted small" style="margin-bottom:8px;">Already have a Passport? Look it up by Emp ID</p>
       <div style="display:flex; gap:8px;">
-        <input type="tel" id="lookupPhone" placeholder="Enter phone number" style="flex:1;" inputmode="numeric">
+        <input type="tel" id="lookupPhone" placeholder="Enter Emp ID" style="flex:1;" inputmode="numeric">
         <button class="btn btn-secondary" id="lookupBtn">Search</button>
       </div>
       <div id="lookupErr" class="err" style="display:none;"></div>
@@ -357,7 +357,7 @@
       <input type="password" id="pinInput" placeholder="PIN" inputmode="numeric" style="text-align:center; letter-spacing:4px; font-size:18px;">
       <div id="pinErr" class="err" style="display:none;"></div>
       <button class="btn btn-primary btn-block" id="pinBtn" style="margin-top:12px;">Unlock</button>
-      <p class="muted small" style="margin-top:14px;">Default PIN: 2026 (editable in the code)</p>
+      <p class="muted small" style="margin-top:14px;">HR Section</p>
     </div>
 
     <div id="adminPanel" style="display:none;">
@@ -381,8 +381,8 @@
         <h2 style="font-size:18px;">➕ Register New Player (Walk-in)</h2>
         <label>Full Name</label>
         <input type="text" id="aRegName" placeholder="Player name">
-        <label>Phone Number</label>
-        <input type="tel" id="aRegPhone" placeholder="Phone number" inputmode="numeric">
+        <label>Emp ID</label>
+        <input type="tel" id="aRegPhone" placeholder="Emp ID" inputmode="numeric">
         <div id="aRegErr" class="err" style="display:none;"></div>
         <button class="btn btn-primary btn-block" id="aRegBtn" style="margin-top:14px;">Register</button>
       </div>
@@ -608,7 +608,7 @@
     var btn = document.getElementById("regBtn");
     errEl.style.display = "none";
     if(!name){ errEl.textContent = "Please enter your full name"; errEl.style.display=""; return; }
-    if(phone.length < 9){ errEl.textContent = "Please enter a valid phone number"; errEl.style.display=""; return; }
+    if(phone.length < 9){ errEl.textContent = "Please enter a valid Emp ID"; errEl.style.display=""; return; }
     var existing = findByPhone(phone);
     if(existing){
       localStorage.setItem(LS_MYID, existing.id);
@@ -773,8 +773,8 @@
     var btn = document.getElementById("aRegBtn");
     errEl.style.display = "none";
     if(!name){ errEl.textContent = "Please enter a name"; errEl.style.display=""; return; }
-    if(phone.length < 9){ errEl.textContent = "Please enter a valid phone number"; errEl.style.display=""; return; }
-    if(findByPhone(phone)){ errEl.textContent = "This phone number is already registered"; errEl.style.display=""; return; }
+    if(phone.length < 9){ errEl.textContent = "Please enter a valid Emp ID"; errEl.style.display=""; return; }
+    if(findByPhone(phone)){ errEl.textContent = "This Emp ID is already registered"; errEl.style.display=""; return; }
     btn.disabled = true; btn.textContent = "Registering...";
     createParticipant(name, phone, function(err, p){
       btn.disabled = false; btn.textContent = "Register";
