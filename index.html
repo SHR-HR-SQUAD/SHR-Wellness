@@ -608,7 +608,7 @@
     var btn = document.getElementById("regBtn");
     errEl.style.display = "none";
     if(!name){ errEl.textContent = "Please enter your full name"; errEl.style.display=""; return; }
-    if(phone.length < 9){ errEl.textContent = "Please enter a valid Emp ID"; errEl.style.display=""; return; }
+    if(phone.length < 5){ errEl.textContent = "Please enter a valid Emp ID"; errEl.style.display=""; return; }
     var existing = findByPhone(phone);
     if(existing){
       localStorage.setItem(LS_MYID, existing.id);
@@ -773,7 +773,7 @@
     var btn = document.getElementById("aRegBtn");
     errEl.style.display = "none";
     if(!name){ errEl.textContent = "Please enter a name"; errEl.style.display=""; return; }
-    if(phone.length < 9){ errEl.textContent = "Please enter a valid Emp ID"; errEl.style.display=""; return; }
+    if(phone.length < 5){ errEl.textContent = "Please enter a valid Emp ID"; errEl.style.display=""; return; }
     if(findByPhone(phone)){ errEl.textContent = "This Emp ID is already registered"; errEl.style.display=""; return; }
     btn.disabled = true; btn.textContent = "Registering...";
     createParticipant(name, phone, function(err, p){
