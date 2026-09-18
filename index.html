@@ -291,6 +291,43 @@
   }
   .setup-banner b{ color:var(--accent-live); }
   .setup-banner code{ background:var(--surface); padding:1px 6px; border-radius:6px; font-size:12.5px; }
+
+  /* lucky draw animation */
+  #winnerPanel{ position:relative; overflow:hidden; }
+  #winnerName.spinning{
+    animation: spinPulse 0.12s ease-in-out infinite;
+    filter: blur(0.3px);
+  }
+  @keyframes spinPulse{
+    0%{ transform: scale(1); opacity:.85; }
+    50%{ transform: scale(1.04); opacity:1; }
+    100%{ transform: scale(1); opacity:.85; }
+  }
+  #winnerName.reveal{
+    animation: revealPop .55s cubic-bezier(.22,1.6,.4,1);
+  }
+  @keyframes revealPop{
+    0%{ transform: scale(0.4) rotate(-6deg); opacity:0; }
+    60%{ transform: scale(1.15) rotate(2deg); opacity:1; }
+    100%{ transform: scale(1) rotate(0deg); opacity:1; }
+  }
+  .drawing-label{
+    font-size:12.5px; font-weight:700; letter-spacing:1px; color:var(--ink-soft);
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .drawing-dots span{ animation: dotFade 1s infinite; }
+  .drawing-dots span:nth-child(2){ animation-delay:.15s; }
+  .drawing-dots span:nth-child(3){ animation-delay:.3s; }
+  @keyframes dotFade{ 0%,100%{opacity:.2;} 50%{opacity:1;} }
+  .confetti-piece{
+    position:absolute; top:-14px; font-size:18px; pointer-events:none;
+    animation-name: confettiFall; animation-timing-function: cubic-bezier(.4,0,.6,1); animation-fill-mode: forwards;
+    will-change: transform, opacity;
+  }
+  @keyframes confettiFall{
+    0%{ transform: translateY(0) rotate(0deg); opacity:1; }
+    100%{ transform: translateY(220px) rotate(360deg); opacity:0; }
+  }
 </style>
 </head>
 <body>
@@ -420,7 +457,7 @@
           <button class="btn btn-secondary" id="drawWinnerBtn">🎲 Draw a Random Winner</button>
         </div>
         <div id="winnerPanel" style="display:none; margin-top:14px; text-align:center; padding:20px 14px; border-radius:16px; background:var(--surface); border:1.5px dashed var(--gold);">
-          <div class="muted small">🎊 WINNER 🎊</div>
+          <div class="muted small" id="winnerLabel">🎊 WINNER 🎊</div>
           <div id="winnerName" style="font-family:'Fraunces',serif; font-size:26px; font-weight:700; color:var(--gold); margin-top:6px;"></div>
           <div id="winnerCode" class="muted small"></div>
         </div>
@@ -856,6 +893,7 @@
 
   // ---------- Lucky Draw (4/4 stamps only) ----------
   var drawnIds = []; // winners already picked this session, excluded from future draws
+  var isDrawing = false; // true while the 5-second draw animation is running
 
   function fullHouseList(){
     return Object.keys(data).map(function(k){ return data[k]; })
@@ -875,7 +913,7 @@
         (drawnIds.length ? " · " + remaining.length + " still eligible (" + drawnIds.length + " already drawn)" : " — eligible for the draw.");
     }
     var drawBtn = document.getElementById("drawWinnerBtn");
-    if(drawBtn) drawBtn.disabled = remaining.length === 0;
+    if(drawBtn && !isDrawing) drawBtn.disabled = remaining.length === 0;
   }
 
   function renderDrawHistory(){
@@ -906,6 +944,25 @@
     saveFile("lucky-draw-4of4-" + dateStamp() + ".csv", csv, "text/csv");
   });
 
+  function launchConfetti(container){
+    var emojis = ["🎉","✨","🎊","⭐","🌟"];
+    for(var i=0;i<18;i++){
+      var span = document.createElement("span");
+      span.className = "confetti-piece";
+      span.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      var duration = 900 + Math.random()*600;
+      var delay = Math.random()*200;
+      span.style.left = (Math.random()*100) + "%";
+      span.style.animationDuration = duration + "ms";
+      span.style.animationDelay = delay + "ms";
+      span.style.fontSize = (14 + Math.random()*10) + "px";
+      container.appendChild(span);
+      (function(el, total){
+        setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, total);
+      })(span, duration + delay + 150);
+    }
+  }
+
   document.getElementById("drawWinnerBtn").addEventListener("click", function(){
     var full = fullHouseList();
     var remaining = full.filter(function(p){ return drawnIds.indexOf(p.id) === -1; });
@@ -914,13 +971,55 @@
       return;
     }
     var winner = remaining[Math.floor(Math.random() * remaining.length)];
-    drawnIds.push(winner.id);
+    var pool = remaining;
+
     var panel = document.getElementById("winnerPanel");
+    var nameEl = document.getElementById("winnerName");
+    var codeEl = document.getElementById("winnerCode");
+    var labelEl = document.getElementById("winnerLabel");
+    var drawBtn = document.getElementById("drawWinnerBtn");
+    var resetBtn = document.getElementById("resetDrawBtn");
+    var exportFullBtn = document.getElementById("exportFullHouseBtn");
+
+    drawBtn.disabled = true;
+    resetBtn.disabled = true;
+    exportFullBtn.disabled = true;
+    isDrawing = true;
+
     panel.style.display = "";
-    document.getElementById("winnerName").textContent = winner.name;
-    document.getElementById("winnerCode").textContent = winner.id + " · " + winner.phone;
-    renderFullHouseSummary();
-    renderDrawHistory();
+    labelEl.innerHTML = '<span class="drawing-label">🥁 DRAWING<span class="drawing-dots"><span>.</span><span>.</span><span>.</span></span></span>';
+    nameEl.className = "spinning";
+    codeEl.textContent = "";
+
+    var totalDuration = 5000; // ~5 seconds of suspense
+    var start = Date.now();
+
+    function tick(){
+      var elapsed = Date.now() - start;
+      if(elapsed >= totalDuration){
+        nameEl.className = "reveal";
+        nameEl.textContent = winner.name;
+        codeEl.textContent = winner.id + " · " + winner.phone;
+        labelEl.textContent = "🎊 WINNER 🎊";
+        drawnIds.push(winner.id);
+        launchConfetti(panel);
+        isDrawing = false;
+        renderFullHouseSummary();
+        renderDrawHistory();
+        drawBtn.disabled = false;
+        resetBtn.disabled = false;
+        exportFullBtn.disabled = false;
+        return;
+      }
+      var candidate = pool[Math.floor(Math.random()*pool.length)];
+      nameEl.textContent = candidate.name;
+      codeEl.textContent = candidate.id;
+      // ease out: cycles fast at first, slows down like a spinning wheel coming to a stop
+      var progress = elapsed / totalDuration;
+      var delay = 60 + Math.pow(progress, 2) * 260;
+      setTimeout(tick, delay);
+    }
+    tick();
   });
 
   document.getElementById("resetDrawBtn").addEventListener("click", function(){
