@@ -328,6 +328,83 @@
     0%{ transform: translateY(0) rotate(0deg); opacity:1; }
     100%{ transform: translateY(220px) rotate(360deg); opacity:0; }
   }
+
+  /* ---------- Big Screen Presentation Mode ---------- */
+  .present-overlay{
+    position:fixed; inset:0; z-index:1000;
+    background: radial-gradient(1400px 900px at 50% 15%, #2a2318, #0c0a07 72%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:#f7f1e3; overflow:hidden; font-family:'Sarabun',sans-serif;
+  }
+  .present-close, .present-fullscreen-btn{
+    position:absolute; top:18px; z-index:30; background:rgba(255,255,255,0.08); color:#fff;
+    border:1px solid rgba(255,255,255,0.28); border-radius:999px; padding:10px 18px;
+    font-weight:700; font-size:14px; cursor:pointer; backdrop-filter: blur(6px);
+    font-family:inherit;
+  }
+  .present-close:hover, .present-fullscreen-btn:hover{ background:rgba(255,255,255,0.16); }
+  .present-close{ right:18px; }
+  .present-fullscreen-btn{ left:18px; }
+  .present-stage{ position:relative; width:100%; flex:1; overflow:hidden; }
+  .present-title{
+    position:absolute; top:clamp(20px,4vh,40px); left:50%; transform:translateX(-50%);
+    font-family:'Fraunces',serif; font-size:clamp(28px,4.2vw,54px); font-weight:700;
+    text-shadow: 0 4px 24px rgba(0,0,0,.5); letter-spacing:1px; white-space:nowrap;
+  }
+  .present-sub{
+    position:absolute; top:clamp(78px,11vh,120px); left:50%; transform:translateX(-50%);
+    font-size:clamp(14px,1.5vw,19px); color:rgba(247,241,227,.65); font-weight:600; white-space:nowrap;
+  }
+  .name-bubble{
+    position:absolute; padding:clamp(10px,1vw,16px) clamp(16px,1.6vw,26px); border-radius:999px;
+    font-weight:700; font-size:clamp(13px,1.5vw,21px); white-space:nowrap;
+    background: rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.25); color:#fff;
+    animation: floaty var(--dur,6s) ease-in-out infinite; transform: translate(-50%,-50%);
+    transition: opacity .4s ease, transform .4s ease, background .3s ease, border-color .3s ease;
+  }
+  @keyframes floaty{
+    0%{ margin: 0 0; }
+    50%{ margin-left: var(--dx,16px); margin-top: var(--dy,-16px); }
+    100%{ margin: 0 0; }
+  }
+  .name-bubble.elim{ opacity:0 !important; transform: translate(-50%,-50%) scale(0.25) rotate(25deg) !important; }
+  .name-bubble.finalist{
+    animation: finalistPulse .5s ease-in-out infinite; border-color: var(--gold);
+    background: rgba(201,154,46,0.22); z-index:5;
+  }
+  @keyframes finalistPulse{
+    0%,100%{ transform: translate(-50%,-50%) scale(1); }
+    50%{ transform: translate(-50%,-50%) scale(1.12); }
+  }
+  .present-winner{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; z-index:10; padding:0 20px;
+  }
+  .present-winner-label{ font-size:clamp(16px,2.1vw,24px); letter-spacing:4px; font-weight:700; color:var(--gold); }
+  .present-winner-name{
+    font-family:'Fraunces',serif; font-weight:700; font-size:clamp(42px,9vw,130px); line-height:1.1;
+    margin:14px 0; text-shadow: 0 6px 44px rgba(201,154,46,.55);
+    animation: presentRevealPop .6s cubic-bezier(.22,1.6,.4,1);
+  }
+  @keyframes presentRevealPop{
+    0%{ transform: scale(0.3) rotate(-8deg); opacity:0; }
+    60%{ transform: scale(1.18) rotate(2deg); opacity:1; }
+    100%{ transform: scale(1) rotate(0deg); opacity:1; }
+  }
+  .present-winner-code{ font-size:clamp(16px,2.2vw,26px); color:rgba(247,241,227,.7); font-weight:600; }
+  .present-controls{
+    position:absolute; bottom:clamp(20px,5vh,44px); left:50%; transform:translateX(-50%);
+    display:flex; gap:14px; z-index:30;
+  }
+  .present-controls .btn{ padding:16px 32px; font-size:clamp(14px,1.4vw,18px); border-radius:999px; }
+  .present-confetti-piece{
+    position:absolute; top:-40px; pointer-events:none; z-index:15;
+    animation-name: confettiFallBig; animation-timing-function: cubic-bezier(.4,0,.6,1); animation-fill-mode: forwards;
+  }
+  @keyframes confettiFallBig{
+    0%{ transform: translateY(0) rotate(0deg); opacity:1; }
+    100%{ transform: translateY(110vh) rotate(720deg); opacity:0; }
+  }
 </style>
 </head>
 <body>
@@ -456,6 +533,7 @@
           <button class="btn btn-primary" id="exportFullHouseBtn">🎉 Export Lucky Draw List (4/4 only)</button>
           <button class="btn btn-secondary" id="drawWinnerBtn">🎲 Draw a Random Winner</button>
         </div>
+        <button class="btn btn-primary btn-block" id="openPresentBtn" style="margin-top:10px; background:linear-gradient(135deg,var(--gold),#8a6a1e);">📽️ Big Screen Presentation Mode</button>
         <div id="winnerPanel" style="display:none; margin-top:14px; text-align:center; padding:20px 14px; border-radius:16px; background:var(--surface); border:1.5px dashed var(--gold);">
           <div class="muted small" id="winnerLabel">🎊 WINNER 🎊</div>
           <div id="winnerName" style="font-family:'Fraunces',serif; font-size:26px; font-weight:700; color:var(--gold); margin-top:6px;"></div>
@@ -485,6 +563,25 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Big Screen Presentation Mode for the Lucky Draw -->
+<div class="present-overlay" id="presentOverlay" style="display:none;">
+  <button class="present-close" id="presentCloseBtn">✕ Close</button>
+  <button class="present-fullscreen-btn" id="presentFullscreenBtn">⛶ Fullscreen</button>
+  <div class="present-stage" id="presentStage">
+    <div class="present-title">🏆 LUCKY DRAW</div>
+    <div class="present-sub" id="presentSub">Loading...</div>
+  </div>
+  <div class="present-winner" id="presentWinner" style="display:none;">
+    <div class="present-winner-label">🎊 THE WINNER IS 🎊</div>
+    <div class="present-winner-name" id="presentWinnerName"></div>
+    <div class="present-winner-code" id="presentWinnerCode"></div>
+  </div>
+  <div class="present-controls">
+    <button class="btn btn-primary" id="presentDrawBtn">🎲 START DRAW</button>
+    <button class="btn btn-secondary" id="presentDrawAgainBtn" style="display:none;">🎲 Draw Next Winner</button>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -944,18 +1041,20 @@
     saveFile("lucky-draw-4of4-" + dateStamp() + ".csv", csv, "text/csv");
   });
 
-  function launchConfetti(container){
+  function launchConfetti(container, big){
     var emojis = ["🎉","✨","🎊","⭐","🌟"];
-    for(var i=0;i<18;i++){
+    var count = big ? 46 : 18;
+    var cls = big ? "present-confetti-piece" : "confetti-piece";
+    for(var i=0;i<count;i++){
       var span = document.createElement("span");
-      span.className = "confetti-piece";
+      span.className = cls;
       span.textContent = emojis[Math.floor(Math.random()*emojis.length)];
-      var duration = 900 + Math.random()*600;
-      var delay = Math.random()*200;
+      var duration = (big ? 1900 : 900) + Math.random()*(big ? 1500 : 600);
+      var delay = Math.random()*(big ? 600 : 200);
       span.style.left = (Math.random()*100) + "%";
       span.style.animationDuration = duration + "ms";
       span.style.animationDelay = delay + "ms";
-      span.style.fontSize = (14 + Math.random()*10) + "px";
+      span.style.fontSize = (big ? (20 + Math.random()*22) : (14 + Math.random()*10)) + "px";
       container.appendChild(span);
       (function(el, total){
         setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); }, total);
@@ -1028,6 +1127,131 @@
     document.getElementById("winnerPanel").style.display = "none";
     renderFullHouseSummary();
     renderDrawHistory();
+  });
+
+  // ---------- Big Screen Presentation Mode ----------
+  var presentOverlay = document.getElementById("presentOverlay");
+  var presentStage = document.getElementById("presentStage");
+  var presentSub = document.getElementById("presentSub");
+  var presentWinnerPanel = document.getElementById("presentWinner");
+  var presentDrawBtn = document.getElementById("presentDrawBtn");
+  var presentDrawAgainBtn = document.getElementById("presentDrawAgainBtn");
+
+  // Scatters one floating bubble per participant onto the stage, avoiding the
+  // title/subtitle area at the top and the controls area at the bottom.
+  function buildBubbles(list){
+    Array.prototype.forEach.call(presentStage.querySelectorAll(".name-bubble"), function(b){ b.remove(); });
+    list.forEach(function(p){
+      var b = document.createElement("div");
+      b.className = "name-bubble";
+      b.textContent = p.name;
+      b.setAttribute("data-id", p.id);
+      var left = 8 + Math.random() * 84;   // % across the stage width
+      var top = 24 + Math.random() * 62;   // % down the stage height (below title, above controls)
+      b.style.left = left + "%";
+      b.style.top = top + "%";
+      b.style.setProperty("--dx", (Math.random()*44-22) + "px");
+      b.style.setProperty("--dy", (Math.random()*44-22) + "px");
+      b.style.setProperty("--dur", (4 + Math.random()*3) + "s");
+      presentStage.appendChild(b);
+    });
+  }
+
+  function presentEligiblePool(){
+    return fullHouseList().filter(function(p){ return drawnIds.indexOf(p.id) === -1; });
+  }
+
+  document.getElementById("openPresentBtn").addEventListener("click", function(){
+    var full = fullHouseList();
+    if(full.length === 0){ toast("No one has completed all 4 stamps yet."); return; }
+    var remaining = presentEligiblePool();
+    presentWinnerPanel.style.display = "none";
+    presentDrawAgainBtn.style.display = "none";
+    presentDrawBtn.style.display = remaining.length ? "" : "none";
+    presentSub.textContent = remaining.length
+      ? remaining.length + " participant" + (remaining.length===1?"":"s") + " with all 4 stamps — ready for the draw" + (drawnIds.length ? " (" + drawnIds.length + " already drawn)" : "")
+      : "All " + full.length + " eligible participant(s) have already been drawn.";
+    buildBubbles(remaining.length ? remaining : full);
+    presentOverlay.style.display = "flex";
+    if(presentOverlay.requestFullscreen){ presentOverlay.requestFullscreen().catch(function(){}); }
+  });
+
+  document.getElementById("presentCloseBtn").addEventListener("click", function(){
+    presentOverlay.style.display = "none";
+    if(document.fullscreenElement) document.exitFullscreen().catch(function(){});
+  });
+
+  document.getElementById("presentFullscreenBtn").addEventListener("click", function(){
+    if(document.fullscreenElement){
+      document.exitFullscreen().catch(function(){});
+    } else if(presentOverlay.requestFullscreen){
+      presentOverlay.requestFullscreen().catch(function(){});
+    }
+  });
+
+  // The main event: bubbles pop out one by one (fast, then slowing for suspense)
+  // until only the winner is left floating alone, then it grows into the big reveal.
+  function runPresentationDraw(){
+    var remaining = presentEligiblePool();
+    if(remaining.length === 0){
+      toast("Everyone eligible has already been drawn.");
+      return;
+    }
+    var winner = remaining[Math.floor(Math.random() * remaining.length)];
+    var others = remaining.filter(function(p){ return p.id !== winner.id; });
+    for(var i = others.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = others[i]; others[i] = others[j]; others[j] = t;
+    }
+
+    presentDrawBtn.style.display = "none";
+    presentDrawAgainBtn.style.display = "none";
+    presentWinnerPanel.style.display = "none";
+    presentSub.textContent = remaining.length + " finalist" + (remaining.length===1?"":"s") + " — narrowing down...";
+
+    var idx = 0;
+    var total = others.length;
+    function eliminateNext(){
+      if(idx >= total){
+        var winnerBubble = presentStage.querySelector('.name-bubble[data-id="' + winner.id + '"]');
+        if(winnerBubble) winnerBubble.classList.add("finalist");
+        presentSub.textContent = "And the winner is...";
+        setTimeout(function(){ revealPresentWinner(winner); }, 1000);
+        return;
+      }
+      var target = others[idx];
+      var bubble = presentStage.querySelector('.name-bubble[data-id="' + target.id + '"]');
+      if(bubble) bubble.classList.add("elim");
+      idx++;
+      var progress = idx / total;
+      var delay = 480 - progress * 370; // starts ~480ms apart, speeds up to ~110ms
+      setTimeout(eliminateNext, Math.max(delay, 90));
+    }
+    setTimeout(eliminateNext, 900); // brief suspense before elimination begins
+  }
+
+  function revealPresentWinner(winner){
+    drawnIds.push(winner.id);
+    document.getElementById("presentWinnerName").textContent = winner.name;
+    document.getElementById("presentWinnerCode").textContent = winner.id + " · " + winner.phone;
+    presentWinnerPanel.style.display = "";
+    launchConfetti(presentStage, true);
+    renderFullHouseSummary();
+    renderDrawHistory();
+    var stillRemaining = presentEligiblePool();
+    presentDrawAgainBtn.style.display = stillRemaining.length ? "" : "none";
+    presentSub.textContent = stillRemaining.length
+      ? stillRemaining.length + " participant" + (stillRemaining.length===1?"":"s") + " still eligible"
+      : "Everyone eligible has now been drawn!";
+  }
+
+  presentDrawBtn.addEventListener("click", runPresentationDraw);
+  presentDrawAgainBtn.addEventListener("click", function(){
+    var remaining = presentEligiblePool();
+    if(remaining.length === 0){ toast("Everyone eligible has already been drawn."); return; }
+    presentWinnerPanel.style.display = "none";
+    buildBubbles(remaining);
+    runPresentationDraw();
   });
 
   // ---------- CSV / JSON export & import ----------
