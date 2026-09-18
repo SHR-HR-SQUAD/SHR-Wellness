@@ -405,11 +405,33 @@
         </div>
 
         <div class="toolbar">
-          <button class="btn btn-primary" id="exportCsvBtn">⬇️ Export CSV (Lucky Draw)</button>
+          <button class="btn btn-primary" id="exportCsvBtn">⬇️ Export CSV (All Participants)</button>
           <button class="btn btn-secondary" id="exportJsonBtn">💾 Export Backup (JSON)</button>
           <button class="btn btn-secondary" id="importJsonBtn">📤 Import / Merge Data</button>
           <input type="file" id="importFile" accept="application/json">
         </div>
+      </div>
+
+      <div class="card" style="border-color:var(--gold); background:linear-gradient(160deg, var(--surface) 0%, var(--gold-bg) 130%);">
+        <h2 style="font-size:18px;">🏆 Lucky Draw — 4/4 Stamps Only</h2>
+        <p class="muted small" id="fullHouseSummary" style="margin-top:6px;">Loading...</p>
+        <div class="toolbar">
+          <button class="btn btn-primary" id="exportFullHouseBtn">🎉 Export Lucky Draw List (4/4 only)</button>
+          <button class="btn btn-secondary" id="drawWinnerBtn">🎲 Draw a Random Winner</button>
+        </div>
+        <div id="winnerPanel" style="display:none; margin-top:14px; text-align:center; padding:20px 14px; border-radius:16px; background:var(--surface); border:1.5px dashed var(--gold);">
+          <div class="muted small">🎊 WINNER 🎊</div>
+          <div id="winnerName" style="font-family:'Fraunces',serif; font-size:26px; font-weight:700; color:var(--gold); margin-top:6px;"></div>
+          <div id="winnerCode" class="muted small"></div>
+        </div>
+        <p class="muted small" id="drawnListNote" style="margin-top:10px; display:none;"></p>
+      </div>
+
+      <div class="card">
+        <h2 style="font-size:16px;">📖 Full Draw History (this session)</h2>
+        <p class="muted small" style="margin-top:4px;">Winners already drawn are excluded from future draws until you reset. This list clears if you reload the page.</p>
+        <div id="drawHistoryList" style="margin-top:10px;"></div>
+        <button class="btn btn-ghost btn-sm" id="resetDrawBtn" style="margin-top:10px;">↺ Reset Draw History</button>
       </div>
 
       <div class="card">
@@ -657,6 +679,8 @@
       renderSearchResults("");
       renderStats();
       renderTable("");
+      renderFullHouseSummary();
+      renderDrawHistory();
     } else {
       pinScreen.style.display = "";
       adminPanel.style.display = "none";
@@ -830,6 +854,83 @@
     }).join("");
   }
 
+  // ---------- Lucky Draw (4/4 stamps only) ----------
+  var drawnIds = []; // winners already picked this session, excluded from future draws
+
+  function fullHouseList(){
+    return Object.keys(data).map(function(k){ return data[k]; })
+      .filter(function(p){ return stampCount(p) === 4; })
+      .sort(function(a,b){ return a.num - b.num; });
+  }
+
+  function renderFullHouseSummary(){
+    var el = document.getElementById("fullHouseSummary");
+    if(!el) return;
+    var full = fullHouseList();
+    var remaining = full.filter(function(p){ return drawnIds.indexOf(p.id) === -1; });
+    if(full.length === 0){
+      el.textContent = "No one has completed all 4 stamps yet.";
+    } else {
+      el.textContent = full.length + " participant" + (full.length===1?"":"s") + " with all 4 stamps" +
+        (drawnIds.length ? " · " + remaining.length + " still eligible (" + drawnIds.length + " already drawn)" : " — eligible for the draw.");
+    }
+    var drawBtn = document.getElementById("drawWinnerBtn");
+    if(drawBtn) drawBtn.disabled = remaining.length === 0;
+  }
+
+  function renderDrawHistory(){
+    var el = document.getElementById("drawHistoryList");
+    var note = document.getElementById("drawnListNote");
+    if(!el) return;
+    if(drawnIds.length === 0){
+      el.innerHTML = '<div class="empty-state small">No winners drawn yet this session.</div>';
+      note.style.display = "none";
+      return;
+    }
+    note.style.display = "";
+    note.textContent = drawnIds.length + " winner" + (drawnIds.length===1?"":"s") + " drawn so far.";
+    el.innerHTML = drawnIds.map(function(id, i){
+      var p = data[id];
+      var name = p ? escapeHtml(p.name) : "(removed)";
+      return '<div class="result-row" style="cursor:default;"><div><div class="rname">#'+(i+1)+' — '+name+'</div><div class="rmeta">'+id+'</div></div></div>';
+    }).join("");
+  }
+
+  document.getElementById("exportFullHouseBtn").addEventListener("click", function(){
+    var full = fullHouseList();
+    if(full.length === 0){ toast("No one has completed all 4 stamps yet."); return; }
+    var header = ["Passport ID","Name","Phone","Registered At"];
+    var rows = full.map(function(p){ return [p.id, p.name, p.phone, p.createdAt]; });
+    var lines = [header].concat(rows).map(csvRow);
+    var csv = "\uFEFF" + lines.join("\r\n");
+    saveFile("lucky-draw-4of4-" + dateStamp() + ".csv", csv, "text/csv");
+  });
+
+  document.getElementById("drawWinnerBtn").addEventListener("click", function(){
+    var full = fullHouseList();
+    var remaining = full.filter(function(p){ return drawnIds.indexOf(p.id) === -1; });
+    if(remaining.length === 0){
+      toast(full.length === 0 ? "No one has completed all 4 stamps yet." : "Everyone eligible has already been drawn.");
+      return;
+    }
+    var winner = remaining[Math.floor(Math.random() * remaining.length)];
+    drawnIds.push(winner.id);
+    var panel = document.getElementById("winnerPanel");
+    panel.style.display = "";
+    document.getElementById("winnerName").textContent = winner.name;
+    document.getElementById("winnerCode").textContent = winner.id + " · " + winner.phone;
+    renderFullHouseSummary();
+    renderDrawHistory();
+  });
+
+  document.getElementById("resetDrawBtn").addEventListener("click", function(){
+    if(drawnIds.length && !confirm("Reset the draw history? All " + drawnIds.length + " past winner(s) become eligible again.")) return;
+    drawnIds = [];
+    document.getElementById("winnerPanel").style.display = "none";
+    renderFullHouseSummary();
+    renderDrawHistory();
+  });
+
   // ---------- CSV / JSON export & import ----------
   var downloadsCap = null;
   function getDownloads(){
@@ -837,6 +938,14 @@
       return claude.use("downloads").then(function(d){ downloadsCap = d; return d; });
     }
     return Promise.resolve(null);
+  }
+
+  function csvRow(r){
+    return r.map(function(cell){
+      cell = String(cell==null?"":cell);
+      if(/[",\n]/.test(cell)) cell = '"' + cell.replace(/"/g,'""') + '"';
+      return cell;
+    }).join(",");
   }
 
   function buildCsv(){
@@ -850,13 +959,7 @@
           String(stampCount(p)), p.createdAt
         ];
       });
-    var lines = [header].concat(rows).map(function(r){
-      return r.map(function(cell){
-        cell = String(cell==null?"":cell);
-        if(/[",\n]/.test(cell)) cell = '"' + cell.replace(/"/g,'""') + '"';
-        return cell;
-      }).join(",");
-    });
+    var lines = [header].concat(rows).map(csvRow);
     return "\uFEFF" + lines.join("\r\n");
   }
 
@@ -974,6 +1077,8 @@
       renderSelectedPanel();
       renderStats();
       renderTable(document.getElementById("tableSearch").value);
+      renderFullHouseSummary();
+      renderDrawHistory();
     }
   }
 
